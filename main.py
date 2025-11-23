@@ -10,6 +10,9 @@ from pathlib import Path
 TEMPLATE_REPO = "unclepomedev/blender-addon-dev-template"
 ZIP_URL = f"https://codeload.github.com/{TEMPLATE_REPO}/zip/refs/heads/main"
 PLACEHOLDER_TOKEN = "addon_hello_world"
+EXCLUDE_FILES = {
+    "README.md",
+}
 
 
 def _download_template_zip(dest_path: Path) -> None:
@@ -58,7 +61,11 @@ def _process_tree_replace(src_root: Path, dst_root: Path, replacement: str) -> N
     - Perform bottom-up renames by constructing the destination path with replacements applied to each part.
     """
     for src_path in sorted(src_root.rglob("*")):
-        rel_parts = [part.replace(PLACEHOLDER_TOKEN, replacement) for part in src_path.relative_to(src_root).parts]
+        rel_path_obj = src_path.relative_to(src_root)
+        if str(rel_path_obj) in EXCLUDE_FILES:
+            continue
+
+        rel_parts = [part.replace(PLACEHOLDER_TOKEN, replacement) for part in rel_path_obj.parts]
         dst_path = dst_root.joinpath(*rel_parts)
 
         if src_path.is_dir():
@@ -106,9 +113,15 @@ def main(argv: list[str] | None = None) -> int:
         "addon_name",
         help=f"Your add-on name. All occurrences of '{PLACEHOLDER_TOKEN}' will be replaced with this value.",
     )
+    parser.add_argument(
+        "-f", "--force",
+        action="store_true",
+        help="Overwrite existing files if they exist."
+    )
     args = parser.parse_args(argv)
 
     addon_name: str = args.addon_name
+    force_overwrite: bool = args.force
     dest_root = Path.cwd()
 
     with tempfile.TemporaryDirectory(prefix="bl_addon_tpl_") as tmpdir:
@@ -138,17 +151,23 @@ def main(argv: list[str] | None = None) -> int:
         print("Applying replacements...", flush=True)
         _process_tree_replace(src_root, processed_root, addon_name)
 
+        processed_items = list(processed_root.rglob("*"))
+        if not processed_items:
+            print("Error: No files processed.", file=sys.stderr)
+            return 6
+
         # Pre-flight collision check: ensure we won't overwrite existing files/dirs
         print("Checking for conflicts in the current directory...", flush=True)
         conflicts: list[Path] = []
-        for src_path in processed_root.rglob("*"):
+        for src_path in processed_items:
             rel = src_path.relative_to(processed_root)
             dest_path = dest_root / rel
             if dest_path.exists():
                 conflicts.append(rel)
 
-        if conflicts:
-            print("Error: the following paths already exist in the current directory and would be overwritten:", file=sys.stderr)
+        if conflicts and not force_overwrite:
+            print("Error: the following paths already exist in the current directory and would be overwritten:",
+                  file=sys.stderr)
             for p in sorted(conflicts):
                 print(f"  {p}", file=sys.stderr)
             print("Aborting. Please run in an empty directory or remove the conflicting files.", file=sys.stderr)
@@ -159,8 +178,11 @@ def main(argv: list[str] | None = None) -> int:
 
         for file_path in sorted([p for p in processed_root.rglob("*") if p.is_file()]):
             dst = dest_root / file_path.relative_to(processed_root)
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(file_path, dst)
+            if force_overwrite and dst.exists():
+                if dst.is_dir():
+                    shutil.rmtree(dst)
+                elif dst.is_file():
+                    shutil.copy2(file_path, dst)
 
     print("Done.")
     print("Your add-on template has been written into the current directory.")

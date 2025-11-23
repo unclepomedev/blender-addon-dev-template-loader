@@ -186,6 +186,12 @@ def main(argv: list[str] | None = None) -> int:
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(file_path, dst)
 
+        readme_path = dest_root / "README.md"
+        if not readme_path.exists() or force_overwrite:
+            print("Generating fresh README.md...", flush=True)
+            readme_content = f"# {addon_name}\n\nDescription of {addon_name}."
+            readme_path.write_text(readme_content, encoding="utf-8")
+
     print("Done.")
     print("Your add-on template has been written into the current directory.")
     return 0

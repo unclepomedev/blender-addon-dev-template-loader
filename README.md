@@ -17,3 +17,24 @@ Replace `my-awesome-addon` with the name of your add-on.
 Notes:
 - The template files are created directly in the current directory.
 - If any files or directories that would be created already exist, the command aborts without overwriting.
+
+For macOS users: for the "fastest" way to create a project, add the following function to your ~/.zshrc.
+
+```zsh
+function bini() {
+    local dirname="$1"
+
+    if [[ -z "$dirname" ]]; then
+        echo "Usage: bini <dirname>"
+        return 1
+    fi
+
+    echo "🚀 Creating Blender Addon project: $dirname"
+    mkdir -p "$dirname" && cd "$dirname" || return 1
+    uvx --from "git+https://github.com/unclepomedev/blender-addon-dev-template-loader" blender-init "$dirname"
+    echo "📦 Installing dependencies..."
+    uv sync
+    source .venv/bin/activate
+    echo "✨ Ready! You are in '$dirname' with virtualenv activated."
+}
+```

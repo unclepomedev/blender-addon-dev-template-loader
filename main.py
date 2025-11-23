@@ -182,7 +182,9 @@ def main(argv: list[str] | None = None) -> int:
                 if dst.is_dir():
                     shutil.rmtree(dst)
                 elif dst.is_file():
-                    shutil.copy2(file_path, dst)
+                    dst.unlink()
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(file_path, dst)
 
     print("Done.")
     print("Your add-on template has been written into the current directory.")

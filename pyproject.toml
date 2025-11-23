@@ -1,0 +1,9 @@
+[project]
+name = "blender-addon-dev-template-loader"
+version = "0.1.0"
+description = "Blender addon development template tool"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+[project.scripts]
+blender-init = "main.py"

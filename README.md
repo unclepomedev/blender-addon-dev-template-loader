@@ -9,8 +9,7 @@ repository and initializes the current working directory with your add-on name.
 Assuming you have uv installed, run the following commands (recommended in an empty directory):
 
 ```bash
-uv add git+https://github.com/unclepomedev/blender-addon-dev-template-loader --dev
-blender-init my-awesome-addon
+uvx --from "git+https://github.com/unclepomedev/blender-addon-dev-template-loader" blender-init "$dirname"
 ```
 
 Replace `my-awesome-addon` with the name of your add-on.

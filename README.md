@@ -9,14 +9,19 @@ repository and initializes the current working directory with your add-on name.
 Assuming you have uv installed, run the following commands (recommended in an empty directory):
 
 ```bash
-uvx --from "git+https://github.com/unclepomedev/blender-addon-dev-template-loader" blender-init "$dirname"
+uvx --from "git+https://github.com/unclepomedev/blender-addon-dev-template-loader" blender-init my-awesome-addon
 ```
 
 Replace `my-awesome-addon` with the name of your add-on.
 
+### Options
+
+- `-m "Name"` / `--maintainer "Name"`: Specify the maintainer name. This replaces `MAINTAINER_STRING` in `blender_manifest.toml`.
+- `-f` / `--force`: Overwrite existing files if they exist.
+
 Notes:
 - The template files are created directly in the current directory.
-- If any files or directories that would be created already exist, the command aborts without overwriting.
+- If any files or directories that would be created already exist, the command aborts without overwriting (unless `-f` is used).
 
 For macOS users: for the "fastest" way to create a project, add the following function to your ~/.zshrc.
 

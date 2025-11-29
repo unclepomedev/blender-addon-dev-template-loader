@@ -10,6 +10,7 @@ from pathlib import Path
 TEMPLATE_REPO = "unclepomedev/blender-addon-dev-template"
 ZIP_URL = f"https://codeload.github.com/{TEMPLATE_REPO}/zip/refs/heads/main"
 PLACEHOLDER_TOKEN = "addon_hello_world"
+MAINTAINER_PLACEHOLDER = "MAINTAINER_STRING"
 EXCLUDE_FILES = {
     "README.md",
 }
@@ -53,11 +54,12 @@ def _iter_single_top_level_dir(root: Path):
     return entries[0]
 
 
-def _process_tree_replace(src_root: Path, dst_root: Path, replacement: str) -> None:
+def _process_tree_replace(src_root: Path, dst_root: Path, replacement: str, maintainer: str | None = None) -> None:
     """Copy the tree from src_root to dst_root, replacing PLACEHOLDER_TOKEN.
 
     - Replace occurrences of PLACEHOLDER_TOKEN in directory and file names.
     - Replace occurrences of PLACEHOLDER_TOKEN in text file contents (UTF-8). Binary files are copied as-is.
+    - If maintainer is provided, replace occurrences of MAINTAINER_PLACEHOLDER in text file contents.
     - Perform bottom-up renames by constructing the destination path with replacements applied to each part.
     """
     for src_path in sorted(src_root.rglob("*")):
@@ -85,6 +87,8 @@ def _process_tree_replace(src_root: Path, dst_root: Path, replacement: str) -> N
                 dst_path.write_bytes(raw)
             else:
                 replaced = text.replace(PLACEHOLDER_TOKEN, replacement)
+                if maintainer:
+                    replaced = replaced.replace(MAINTAINER_PLACEHOLDER, maintainer)
                 dst_path.write_text(replaced, encoding="utf-8")
 
         try:
@@ -118,10 +122,15 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Overwrite existing files if they exist."
     )
+    parser.add_argument(
+        "-m", "--maintainer",
+        help=f"Maintainer name. Replaces '{MAINTAINER_PLACEHOLDER}'.",
+    )
     args = parser.parse_args(argv)
 
     addon_name: str = args.addon_name
     force_overwrite: bool = args.force
+    maintainer: str | None = args.maintainer
     dest_root = Path.cwd()
 
     with tempfile.TemporaryDirectory(prefix="bl_addon_tpl_") as tmpdir:
@@ -149,7 +158,7 @@ def main(argv: list[str] | None = None) -> int:
 
         processed_root = tmpdir_p / "processed"
         print("Applying replacements...", flush=True)
-        _process_tree_replace(src_root, processed_root, addon_name)
+        _process_tree_replace(src_root, processed_root, addon_name, maintainer=maintainer)
 
         processed_items = list(processed_root.rglob("*"))
         if not processed_items:
